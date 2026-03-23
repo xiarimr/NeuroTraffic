@@ -1,22 +1,5 @@
 ## 1 Introduction
 
-Official code for the article "[Expression might be enough: representing pressure and demand for reinforcement learning based traffic signal control](https://proceedings.mlr.press/v162/zhang22ah/zhang22ah.pdf)".
-
-This article has been received by ICML 2022
-
-If you use our method, please cite our article.
-```latex
-@inproceedings{advanced_xlight,
-  title={Expression might be enough: representing pressure and demand for reinforcement learning based traffic signal control},
-  author={Zhang, Liang and Wu, Qiang and Shen, Jun and L{\"u}, Linyuan and Du, Bo and Wu, Jianqing},
-  booktitle={International Conference on Machine Learning},
-  pages={26645--26654},
-  year={2022},
-  organization={PMLR}
-}
-
-```
-
 The code structure is based on  [Efficient_XLight](https://github.com/LiangZhang1996/Efficient_XLight.git).
 
 ## 2 Requirements
