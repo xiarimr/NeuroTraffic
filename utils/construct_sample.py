@@ -62,13 +62,13 @@ class ConstructSample:
     def construct_reward(self, time, i):
         rs = self.logging_data_list_per_gen[i][time + self.measure_time - 1]
         assert time + self.measure_time - 1 == rs["time"]
-        r_instant = self.reward_builder.compute(rs['state'])
+        r_instant = self.reward_builder.compute(rs['state'], mode=rs.get("reward_mode"))
         # average
         list_r = []
         for t in range(time, time + self.measure_time):
             rs = self.logging_data_list_per_gen[i][t]
             assert t == rs["time"]
-            r = self.reward_builder.compute(rs['state'])
+            r = self.reward_builder.compute(rs['state'], mode=rs.get("reward_mode"))
             list_r.append(r)
         r_average = np.average(list_r)
 

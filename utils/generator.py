@@ -1,5 +1,6 @@
 from .config import get_agent_class
 from .cityflow_env import CityFlowEnv
+from .experiment_logger import ExperimentLogger
 import time
 import os
 import copy
@@ -76,6 +77,17 @@ class Generator:
         print("start logging.......................")
         self.env.bulk_log_multi_process()
         log_time = time.time() - log_start_time
+        episode_summary = self.env.get_episode_summary()
+        ExperimentLogger(self.dic_path["PATH_TO_WORK_DIRECTORY"]).log_episode({
+            "stage": "train",
+            "episode_name": "train_round_{0}_generator_{1}".format(self.cnt_round, self.cnt_gen),
+            "round": self.cnt_round,
+            "generator": self.cnt_gen,
+            "model_name": self.dic_traffic_env_conf["MODEL_NAME"],
+            "mode_selector_enabled": self.dic_traffic_env_conf.get("MODE_SELECTOR_ENABLED", True),
+            "reward_mode": self.dic_traffic_env_conf.get("REWARD_MODE", "balanced"),
+            **episode_summary
+        })
         self.env.end_cityflow()
         print("reset_env_time: ", reset_env_time)
         print("running_time: ", running_time)

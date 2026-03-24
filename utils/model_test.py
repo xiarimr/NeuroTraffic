@@ -1,6 +1,7 @@
 from .config import get_agent_class
 from copy import deepcopy
 from .cityflow_env import CityFlowEnv
+from .experiment_logger import ExperimentLogger
 import json
 import os
 
@@ -73,6 +74,17 @@ def test(model_dir, cnt_round, run_cnt, _dic_traffic_env_conf):
             step_num += 1
 
         env.batch_log_2()
+        episode_summary = env.get_episode_summary()
+        ExperimentLogger(records_dir).log_episode({
+            "stage": "test",
+            "episode_name": model_round,
+            "round": cnt_round,
+            "generator": "",
+            "model_name": dic_traffic_env_conf["MODEL_NAME"],
+            "mode_selector_enabled": dic_traffic_env_conf.get("MODE_SELECTOR_ENABLED", True),
+            "reward_mode": dic_traffic_env_conf.get("REWARD_MODE", "balanced"),
+            **episode_summary
+        })
         env.end_cityflow()
     except:
         print("============== error occurs in model_test ============")

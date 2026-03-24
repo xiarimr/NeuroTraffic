@@ -15,18 +15,21 @@ class RewardBuilder:
     )
 
     DEFAULT_MODE_WEIGHTS = {
+        # 兼顾排队、延迟、吞吐和切相成本
         "balanced": {
             "queue_length": -0.25,
             "delay": -0.05,
             "throughput": 0.1,
             "phase_switch": -0.02,
         },
+        # 优先清空排队车辆，适合车流较小的场景
         "queue_clearance": {
             "queue_length": -0.6,
             "delay": -0.1,
             "throughput": 0.15,
             "phase_switch": -0.05,
         },
+        # 优先保证主路通行，适合主路车流较大的场景
         "main_road_priority": {
             "main_road_queue_length": -0.6,
             "queue_length": -0.1,
@@ -34,6 +37,7 @@ class RewardBuilder:
             "throughput": 0.1,
             "phase_switch": -0.03,
         },
+        # 强化抗拥堵能力，适合车流较大的场景
         "congestion_resistance": {
             "queue_length": -0.35,
             "delay": -0.2,

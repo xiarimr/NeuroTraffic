@@ -6,7 +6,9 @@ import pandas as pd
 import os
 import cityflow as engine
 import time
+from collections import deque
 from multiprocessing import Process
+from .mode_selector import ModeSelector
 from .reward_builder import RewardBuilder
 
 
@@ -491,8 +493,8 @@ class Intersection:
     def _get_adjacency_row(self):
         return self.adjacency_row
 
-    def get_reward(self, dic_reward_info=None):
-        return self.reward_builder.compute(self.dic_feature)
+    def get_reward(self, dic_reward_info=None, mode=None):
+        return self.reward_builder.compute(self.dic_feature, mode=mode)
 
 
 class CityFlowEnv:
@@ -511,6 +513,20 @@ class CityFlowEnv:
         self.list_lanes = None
         self.system_states = None
         self.lane_length = None
+        self.mode_selector_enabled = bool(self.dic_traffic_env_conf.get("MODE_SELECTOR_ENABLED", True))
+        self.mode_selector = ModeSelector.from_env_config(dic_traffic_env_conf)
+        self.current_reward_mode = self.dic_traffic_env_conf.get("REWARD_MODE", "balanced")
+        self.current_mode_reason = "initial_reward_mode"
+        self.previous_mode_window_summary = None
+        self.window_snapshots = deque(maxlen=self.mode_selector.window_size)
+        self.path_to_mode_log = os.path.join(self.path_to_log, "mode_switch_log.csv")
+        self.mode_switch_count = 0
+        self.system_vehicle_stats = {}
+        self.previous_active_vehicle_ids = set()
+        self.episode_total_reward = 0.0
+        self.episode_queue_sum = 0.0
+        self.episode_queue_samples = 0
+        self.episode_completed_vehicle_count = 0
 
         # check min action time
         if self.dic_traffic_env_conf["MIN_ACTION_TIME"] <= self.dic_traffic_env_conf["YELLOW_TIME"]:
@@ -523,6 +539,166 @@ class CityFlowEnv:
             path_to_log_file = os.path.join(self.path_to_log, "inter_{0}.pkl".format(inter_ind))
             f = open(path_to_log_file, "wb")
             f.close()
+        self._initialize_mode_log()
+
+    def _initialize_mode_log(self):
+        with open(self.path_to_mode_log, "w") as f:
+            f.write("time,old_mode,new_mode,reason,average_queue_length,trunk_queue_ratio,throughput_change_rate,spillback_risk\n")
+
+    @staticmethod
+    def _safe_div(numerator, denominator):
+        if abs(denominator) < 1e-6:
+            return 0.0
+        return float(numerator) / float(denominator)
+
+    def _capture_mode_selector_snapshot(self):
+        if not self.list_intersection:
+            return
+
+        num_intersections = max(1, len(self.list_intersection))
+        total_queue = 0.0
+        total_trunk_queue = 0.0
+        total_throughput = 0.0
+        spillback_risk_sum = 0.0
+        for inter in self.list_intersection:
+            feature = inter.get_feature()
+            queue_length = float(feature.get("queue_length", 0.0))
+            trunk_queue = float(feature.get("main_road_queue_length", queue_length))
+            throughput = float(feature.get("throughput", 0.0))
+            outgoing_queue = float(np.sum(feature.get("lane_num_waiting_vehicle_out", 0.0)))
+            total_queue += queue_length
+            total_trunk_queue += trunk_queue
+            total_throughput += throughput
+            spillback_risk_sum += self._safe_div(outgoing_queue, queue_length + outgoing_queue)
+
+        self.window_snapshots.append({
+            "average_queue_length": total_queue / float(num_intersections),
+            "total_queue": total_queue,
+            "total_trunk_queue": total_trunk_queue,
+            "average_throughput": total_throughput / float(num_intersections),
+            "spillback_risk": spillback_risk_sum / float(num_intersections),
+        })
+
+    def _maybe_update_reward_mode(self):
+        current_time = int(self.get_current_time())
+        if not self.mode_selector_enabled:
+            return
+        if current_time <= 0 or current_time % self.mode_selector.window_size != 0:
+            return
+        if len(self.window_snapshots) < self.mode_selector.window_size:
+            return
+
+        window_summary = self.mode_selector.summarize_window(
+            list(self.window_snapshots),
+            previous_window_summary=self.previous_mode_window_summary,
+        )
+        next_mode, reason = self.mode_selector.select_mode(
+            window_summary,
+            current_mode=self.current_reward_mode,
+        )
+        self.previous_mode_window_summary = window_summary
+
+        if next_mode == self.current_reward_mode:
+            self.current_mode_reason = "stable_mode: " + reason
+            return
+
+        old_mode = self.current_reward_mode
+        self.current_reward_mode = next_mode
+        self.current_mode_reason = reason
+        self._record_mode_switch(current_time, old_mode, next_mode, reason, window_summary)
+
+    def _record_mode_switch(self, current_time, old_mode, new_mode, reason, window_summary):
+        self.mode_switch_count += 1
+        print(
+            "[ModeSelector] time={0}, {1} -> {2}, reason={3}".format(
+                current_time, old_mode, new_mode, reason
+            )
+        )
+        with open(self.path_to_mode_log, "a") as f:
+            f.write(
+                "{0},{1},{2},\"{3}\",{4:.6f},{5:.6f},{6:.6f},{7:.6f}\n".format(
+                    current_time,
+                    old_mode,
+                    new_mode,
+                    reason.replace('"', "'"),
+                    window_summary["average_queue_length"],
+                    window_summary["trunk_queue_ratio"],
+                    window_summary["throughput_change_rate"],
+                    window_summary["spillback_risk"],
+                )
+            )
+
+    def _reset_episode_metrics(self):
+        self.mode_switch_count = 0
+        self.system_vehicle_stats = {}
+        self.previous_active_vehicle_ids = set()
+        self.episode_total_reward = 0.0
+        self.episode_queue_sum = 0.0
+        self.episode_queue_samples = 0
+        self.episode_completed_vehicle_count = 0
+
+    def _update_episode_vehicle_metrics(self):
+        current_time = float(self.get_current_time())
+        active_vehicle_ids = set()
+        for vehicle_id, speed in self.system_states["get_vehicle_speed"].items():
+            if "shadow" in vehicle_id:
+                continue
+            active_vehicle_ids.add(vehicle_id)
+            if vehicle_id not in self.system_vehicle_stats:
+                self.system_vehicle_stats[vehicle_id] = {
+                    "enter_time": current_time,
+                    "leave_time": None,
+                    "waiting_time": 0.0,
+                }
+            if speed <= 0.1:
+                self.system_vehicle_stats[vehicle_id]["waiting_time"] += 1.0
+
+        finished_vehicle_ids = self.previous_active_vehicle_ids - active_vehicle_ids
+        for vehicle_id in finished_vehicle_ids:
+            vehicle_stats = self.system_vehicle_stats.get(vehicle_id)
+            if vehicle_stats is None or vehicle_stats["leave_time"] is not None:
+                continue
+            vehicle_stats["leave_time"] = current_time
+            self.episode_completed_vehicle_count += 1
+
+        self.previous_active_vehicle_ids = active_vehicle_ids
+
+    def _capture_episode_metrics_snapshot(self, reward):
+        num_intersections = max(1, len(self.list_intersection))
+        total_queue = 0.0
+        for inter in self.list_intersection:
+            total_queue += float(inter.get_feature().get("queue_length", 0.0))
+
+        self.episode_total_reward += float(np.sum(reward))
+        self.episode_queue_sum += total_queue / float(num_intersections)
+        self.episode_queue_samples += 1
+
+    def get_episode_summary(self):
+        current_time = float(self.get_current_time())
+        travel_times = []
+        waiting_times = []
+        for vehicle_stats in self.system_vehicle_stats.values():
+            leave_time = vehicle_stats["leave_time"]
+            effective_leave_time = current_time if leave_time is None else float(leave_time)
+            travel_times.append(max(0.0, effective_leave_time - float(vehicle_stats["enter_time"])))
+            waiting_times.append(float(vehicle_stats["waiting_time"]))
+
+        average_travel_time = 0.0 if not travel_times else float(np.mean(travel_times))
+        average_waiting_time = 0.0 if not waiting_times else float(np.mean(waiting_times))
+        average_queue_length = 0.0
+        if self.episode_queue_samples > 0:
+            average_queue_length = self.episode_queue_sum / float(self.episode_queue_samples)
+
+        return {
+            "total_reward": float(self.episode_total_reward),
+            "average_waiting_time": average_waiting_time,
+            "average_queue_length": float(average_queue_length),
+            "throughput": float(self.episode_completed_vehicle_count),
+            "average_travel_time": average_travel_time,
+            "current_mode": self.current_reward_mode,
+            "mode_switch_count": int(self.mode_switch_count),
+            "episode_duration": current_time,
+        }
 
     def reset(self):
         print(" ============= self.eng.reset() to be implemented ==========")
@@ -581,6 +757,13 @@ class CityFlowEnv:
 
         for inter in self.list_intersection:
             inter.update_current_measurements(self.system_states)
+        self._reset_episode_metrics()
+        self.window_snapshots.clear()
+        self.previous_mode_window_summary = None
+        self.current_reward_mode = self.dic_traffic_env_conf.get("REWARD_MODE", "balanced")
+        self.current_mode_reason = "initial_reward_mode"
+        self._capture_mode_selector_snapshot()
+        self._update_episode_vehicle_metrics()
         state, done = self.get_state()
         return state
 
@@ -605,17 +788,21 @@ class CityFlowEnv:
 
             instant_time = self.get_current_time()
             self.current_time = self.get_current_time()
+            self._maybe_update_reward_mode()
 
             before_action_feature = self.get_feature()
             # state = self.get_state()
 
             if i == 0:
                 print("time: {0}".format(instant_time))
-                    
+
             self._inner_step(action_in_sec)
+            self._capture_mode_selector_snapshot()
+            self._update_episode_vehicle_metrics()
 
             # get reward
             reward = self.get_reward()
+            self._capture_episode_metrics_snapshot(reward)
             for j in range(len(reward)):
                 average_reward_action_list[j] = (average_reward_action_list[j] * i + reward[j]) / (i + 1)
             self.log(cur_time=instant_time, before_action_feature=before_action_feature, action=action_in_sec_display)
@@ -661,7 +848,13 @@ class CityFlowEnv:
         return list_state, done
 
     def get_reward(self):
-        list_reward = [inter.get_reward(self.dic_traffic_env_conf["DIC_REWARD_INFO"]) for inter in self.list_intersection]
+        list_reward = [
+            inter.get_reward(
+                self.dic_traffic_env_conf["DIC_REWARD_INFO"],
+                mode=self.current_reward_mode,
+            )
+            for inter in self.list_intersection
+        ]
         return list_reward
 
     def get_current_time(self):
@@ -672,7 +865,9 @@ class CityFlowEnv:
         for inter_ind in range(len(self.list_intersection)):
             self.list_inter_log[inter_ind].append({"time": cur_time,
                                                    "state": before_action_feature[inter_ind],
-                                                   "action": action[inter_ind]})
+                                                   "action": action[inter_ind],
+                                                   "reward_mode": self.current_reward_mode,
+                                                   "mode_reason": self.current_mode_reason})
 
     def batch_log_2(self):
         """

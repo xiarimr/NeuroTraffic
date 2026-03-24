@@ -1,0 +1,3 @@
+﻿stage,episode_name,round,generator,model_name,mode_selector_enabled,reward_mode,current_mode,total_reward,average_waiting_time,average_queue_length,throughput,average_travel_time,mode_switch_count,episode_duration
+test,round_0,0,,PPOColight,True,balanced,queue_clearance,130,10,6,58,102,2,3600
+test,round_1,1,,PPOColight,True,balanced,main_road_priority,145,9,5,63,95,3,3600

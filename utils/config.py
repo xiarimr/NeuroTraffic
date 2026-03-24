@@ -80,6 +80,9 @@ dic_traffic_env_conf = {
     "REWARD_LEGACY_COMPAT": True,
     "REWARD_WEIGHTS_BY_MODE": {},
     "REWARD_MAIN_ROAD_APPROACHES": ["W", "E"],
+    "MODE_SELECTOR_ENABLED": True,
+    "MODE_SELECTOR_WINDOW": 300,
+    "MODE_SELECTOR_THRESHOLDS": {},
     "DIC_REWARD_INFO": {
         "queue_length": 0,
         "pressure": 0,

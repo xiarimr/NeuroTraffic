@@ -12,6 +12,8 @@ def parse_args():
     parser.add_argument("-mod",        type=str,           default="AdvancedColight")
     parser.add_argument("-reward_mode", type=str,          default="balanced",
                         choices=["balanced", "queue_clearance", "main_road_priority", "congestion_resistance"])
+    parser.add_argument("-disable_mode_selector", action="store_true", default=False)
+    parser.add_argument("-mode_selector_window", type=int, default=300)
     parser.add_argument("-eightphase",  action="store_true", default=False)
     parser.add_argument("-gen",        type=int,            default=1)
     parser.add_argument("-multi_process", action="store_true", default=True)
@@ -67,6 +69,8 @@ def main(in_args=None):
                 "adjacency_matrix",
             ],
             "REWARD_MODE": in_args.reward_mode,
+            "MODE_SELECTOR_ENABLED": not in_args.disable_mode_selector,
+            "MODE_SELECTOR_WINDOW": in_args.mode_selector_window,
 
             "DIC_REWARD_INFO": {
                 "queue_length": -0.25,
