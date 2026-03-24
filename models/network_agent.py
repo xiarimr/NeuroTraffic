@@ -63,6 +63,55 @@ class NetworkAgent(Agent):
         decayed_epsilon = self.dic_agent_conf["EPSILON"] * pow(self.dic_agent_conf["EPSILON_DECAY"], cnt_round)
         self.dic_agent_conf["EPSILON"] = max(decayed_epsilon, self.dic_agent_conf["MIN_EPSILON"])
 
+    def get_feature_dim(self, feature_name):
+        if "cur_phase" in feature_name:
+            if self.dic_traffic_env_conf.get("BINARY_PHASE_EXPANSION", False):
+                phase_encoding = next(iter(self.dic_traffic_env_conf["PHASE"].values()))
+                return len(phase_encoding)
+            return 1
+
+        if feature_name == "adjacency_matrix":
+            return min(
+                self.dic_traffic_env_conf["TOP_K_ADJACENCY"],
+                self.dic_traffic_env_conf["NUM_INTERSECTIONS"],
+            )
+
+        if feature_name == "pressure":
+            return self.num_lane * 2
+
+        if feature_name == "num_in_seg_attend":
+            return self.num_lane * 8
+
+        if feature_name in {
+            "time_this_phase",
+            "queue_length",
+            "delay",
+            "throughput",
+            "phase_switch",
+            "pressure_total",
+            "main_road_queue_length",
+            "main_road_throughput",
+        }:
+            return 1
+
+        if feature_name in {
+            "lane_num_vehicle",
+            "lane_num_vehicle_downstream",
+            "delta_lane_num_vehicle",
+            "lane_num_waiting_vehicle_in",
+            "lane_num_waiting_vehicle_out",
+            "traffic_movement_pressure_queue",
+            "traffic_movement_pressure_queue_efficient",
+            "traffic_movement_pressure_num",
+            "lane_enter_running_part",
+        }:
+            return self.num_lane
+
+        raise ValueError("Unsupported feature dimension inference for feature: {0}".format(feature_name))
+
+    def get_feature_dims(self, feature_names):
+        return [self.get_feature_dim(feature_name) for feature_name in feature_names]
+
     def _checkpoint_path(self, file_name, file_path=None):
         base_dir = file_path or self.dic_path["PATH_TO_MODEL"]
         return os.path.join(base_dir, "%s.pt" % file_name)

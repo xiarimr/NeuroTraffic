@@ -29,7 +29,7 @@ class SimpleDQNNet(nn.Module):
 class SimpleDQNAgentOne(NetworkAgent):
     def build_network(self):
         used_feature = self.dic_traffic_env_conf["LIST_STATE_FEATURE"]
-        feature_dims = [8 if "cur_phase" in feat_name else 12 for feat_name in used_feature]
+        feature_dims = self.get_feature_dims(used_feature)
         return SimpleDQNNet(feature_dims, self.dic_agent_conf["D_DENSE"], self.num_actions)
 
     def prepare_Xs_Y(self, memory):

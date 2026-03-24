@@ -43,7 +43,7 @@ class PressLightNet(nn.Module):
 class PressLightAgentOne(NetworkAgent):
     def build_network(self):
         used_feature = self.dic_traffic_env_conf["LIST_STATE_FEATURE"]
-        feature_dims = [8 if "cur_phase" in feat_name else 12 for feat_name in used_feature]
+        feature_dims = self.get_feature_dims(used_feature)
         return PressLightNet(
             feature_dims=feature_dims,
             hidden_dim=self.dic_agent_conf["D_DENSE"],
