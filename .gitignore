@@ -1,0 +1,14 @@
+__pycache__/
+.vscode/
+LICENSE
+PROJECT_ARCHITECTURE_CN.md
+records/
+model/
+.ipynb_checkpoints/
+comparison_outputs/dqn_jinan_real/.ipynb_checkpoints/
+comparison_outputs/dqn_jinan_real_2000/.ipynb_checkpoints/
+comparison_outputs/dqn_jinan_real_2500/.ipynb_checkpoints/
+models/__pycache__/
+models/.ipynb_checkpoints/
+utils/__pycache__/
+tmp_compare/
