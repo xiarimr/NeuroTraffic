@@ -59,23 +59,56 @@ def build_experiment_label(traffic_conf):
 
 def load_episode_rows(experiment_dir):
     csv_path = experiment_dir / "episode_metrics.csv"
-    if not csv_path.exists():
-        raise FileNotFoundError("Missing episode_metrics.csv under {0}".format(experiment_dir))
-
     rows = []
-    with csv_path.open("r", newline="", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            normalized = dict(row)
-            normalized["round"] = safe_int(row.get("round"))
-            normalized["total_reward"] = safe_float(row.get("total_reward"))
-            normalized["average_waiting_time"] = safe_float(row.get("average_waiting_time"))
-            normalized["average_queue_length"] = safe_float(row.get("average_queue_length"))
-            normalized["throughput"] = safe_float(row.get("throughput"))
-            normalized["average_travel_time"] = safe_float(row.get("average_travel_time"))
-            normalized["mode_switch_count"] = safe_int(row.get("mode_switch_count"))
-            normalized["episode_duration"] = safe_float(row.get("episode_duration"))
-            rows.append(normalized)
+    if csv_path.exists():
+        with csv_path.open("r", newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                normalized = dict(row)
+                normalized["round"] = safe_int(row.get("round"))
+                normalized["total_reward"] = safe_float(row.get("total_reward"))
+                normalized["average_waiting_time"] = safe_float(row.get("average_waiting_time"))
+                normalized["average_queue_length"] = safe_float(row.get("average_queue_length"))
+                normalized["throughput"] = safe_float(row.get("throughput"))
+                normalized["average_travel_time"] = safe_float(row.get("average_travel_time"))
+                normalized["mode_switch_count"] = safe_int(row.get("mode_switch_count"))
+                normalized["episode_duration"] = safe_float(row.get("episode_duration"))
+                rows.append(normalized)
+        return rows
+
+    jsonl_path = experiment_dir / "episode_metrics.jsonl"
+    if jsonl_path.exists():
+        with jsonl_path.open("r", encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                row = json.loads(line)
+                normalized = dict(row)
+                normalized["round"] = safe_int(row.get("round"))
+                normalized["total_reward"] = safe_float(row.get("total_reward"))
+                normalized["average_waiting_time"] = safe_float(row.get("average_waiting_time"))
+                normalized["average_queue_length"] = safe_float(row.get("average_queue_length"))
+                normalized["throughput"] = safe_float(row.get("throughput"))
+                normalized["average_travel_time"] = safe_float(row.get("average_travel_time"))
+                normalized["mode_switch_count"] = safe_int(row.get("mode_switch_count"))
+                normalized["episode_duration"] = safe_float(row.get("episode_duration"))
+                rows.append(normalized)
+        return rows
+
+    nested_matches = []
+    if experiment_dir.exists():
+        nested_matches = [str(path) for path in experiment_dir.rglob("episode_metrics.csv")]
+        if not nested_matches:
+            nested_matches = [str(path) for path in experiment_dir.rglob("episode_metrics.jsonl")]
+    message = (
+        "Missing episode_metrics.csv/jsonl under {0}. "
+        "This usually means the experiment was generated before unified experiment logging was added, "
+        "or the run did not finish cleanly. "
+        "Please confirm utils/generator.py and utils/model_test.py include ExperimentLogger, then rerun the experiment."
+    ).format(experiment_dir)
+    if nested_matches:
+        message += " Found nested metric files: {0}".format(", ".join(nested_matches[:3]))
+    raise FileNotFoundError(message)
     return rows
 
 
