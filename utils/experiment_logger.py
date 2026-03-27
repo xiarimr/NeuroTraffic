@@ -11,6 +11,8 @@ class ExperimentLogger:
         "generator",
         "model_name",
         "mode_selector_enabled",
+        "selector_type",
+        "selector_backend",
         "reward_mode",
         "current_mode",
         "total_reward",
@@ -18,6 +20,7 @@ class ExperimentLogger:
         "average_queue_length",
         "throughput",
         "average_travel_time",
+        "selector_fallback_count",
         "mode_switch_count",
         "episode_duration",
     ]

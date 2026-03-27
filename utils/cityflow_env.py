@@ -4,12 +4,13 @@ import json
 import sys
 import pandas as pd
 import os
+import csv
 import cityflow as engine
 import time
 from collections import deque
 from multiprocessing import Process
-from .mode_selector import ModeSelector
 from .reward_builder import RewardBuilder
+from .selector_factory import create_mode_selector
 
 
 class Intersection:
@@ -513,14 +514,21 @@ class CityFlowEnv:
         self.list_lanes = None
         self.system_states = None
         self.lane_length = None
+        self.selector_type = str(self.dic_traffic_env_conf.get("SELECTOR_TYPE", "rule")).lower()
         self.mode_selector_enabled = bool(self.dic_traffic_env_conf.get("MODE_SELECTOR_ENABLED", True))
-        self.mode_selector = ModeSelector.from_env_config(dic_traffic_env_conf)
+        self.mode_selector = create_mode_selector(dic_traffic_env_conf)
         self.current_reward_mode = self.dic_traffic_env_conf.get("REWARD_MODE", "balanced")
         self.current_mode_reason = "initial_reward_mode"
         self.previous_mode_window_summary = None
         self.window_snapshots = deque(maxlen=self.mode_selector.window_size)
         self.path_to_mode_log = os.path.join(self.path_to_log, "mode_switch_log.csv")
+        self.path_to_selector_log = os.path.join(self.path_to_log, "mode_selector_log.csv")
         self.mode_switch_count = 0
+        self.current_selector_backend = getattr(self.mode_selector, "backend", self.selector_type)
+        self.current_selector_fallback_triggered = False
+        self.current_selector_raw_output = ""
+        self.current_window_features = {}
+        self.selector_fallback_count = 0
         self.system_vehicle_stats = {}
         self.previous_active_vehicle_ids = set()
         self.episode_total_reward = 0.0
@@ -542,8 +550,38 @@ class CityFlowEnv:
         self._initialize_mode_log()
 
     def _initialize_mode_log(self):
-        with open(self.path_to_mode_log, "w") as f:
-            f.write("time,old_mode,new_mode,reason,average_queue_length,trunk_queue_ratio,throughput_change_rate,spillback_risk\n")
+        with open(self.path_to_mode_log, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow([
+                "time",
+                "old_mode",
+                "new_mode",
+                "reason",
+                "average_queue_length",
+                "trunk_queue_ratio",
+                "throughput_change_rate",
+                "spillback_risk",
+            ])
+
+        with open(self.path_to_selector_log, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow([
+                "time",
+                "selector_type",
+                "backend",
+                "previous_mode",
+                "selected_mode",
+                "current_mode",
+                "mode_changed",
+                "fallback_triggered",
+                "reason",
+                "raw_output",
+                "average_queue_length",
+                "trunk_queue_ratio",
+                "throughput_change_rate",
+                "spillback_risk",
+                "average_throughput",
+            ])
 
     @staticmethod
     def _safe_div(numerator, denominator):
@@ -592,20 +630,67 @@ class CityFlowEnv:
             list(self.window_snapshots),
             previous_window_summary=self.previous_mode_window_summary,
         )
-        next_mode, reason = self.mode_selector.select_mode(
+        decision = self.mode_selector.select_mode_with_details(
             window_summary,
             current_mode=self.current_reward_mode,
         )
+        next_mode = decision["mode"]
+        reason = decision["reason"]
         self.previous_mode_window_summary = window_summary
+        previous_mode = self.current_reward_mode
+        self.current_window_features = dict(window_summary)
+        self.current_selector_backend = decision.get("backend", getattr(self.mode_selector, "backend", self.selector_type))
+        self.current_selector_fallback_triggered = bool(decision.get("fallback_triggered", False))
+        self.current_selector_raw_output = str(decision.get("raw_output", ""))
+        self.selector_fallback_count += int(self.current_selector_fallback_triggered)
 
         if next_mode == self.current_reward_mode:
             self.current_mode_reason = "stable_mode: " + reason
+            self._record_selector_decision(
+                current_time=current_time,
+                previous_mode=previous_mode,
+                selected_mode=next_mode,
+                current_mode=self.current_reward_mode,
+                decision=decision,
+                window_summary=window_summary,
+                mode_changed=False,
+            )
             return
 
         old_mode = self.current_reward_mode
         self.current_reward_mode = next_mode
         self.current_mode_reason = reason
+        self._record_selector_decision(
+            current_time=current_time,
+            previous_mode=old_mode,
+            selected_mode=next_mode,
+            current_mode=self.current_reward_mode,
+            decision=decision,
+            window_summary=window_summary,
+            mode_changed=True,
+        )
         self._record_mode_switch(current_time, old_mode, next_mode, reason, window_summary)
+
+    def _record_selector_decision(self, current_time, previous_mode, selected_mode, current_mode, decision, window_summary, mode_changed):
+        with open(self.path_to_selector_log, "a", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow([
+                current_time,
+                decision.get("selector_type", self.selector_type),
+                decision.get("backend", getattr(self.mode_selector, "backend", self.selector_type)),
+                previous_mode,
+                selected_mode,
+                current_mode,
+                int(bool(mode_changed)),
+                int(bool(decision.get("fallback_triggered", False))),
+                decision.get("reason", ""),
+                decision.get("raw_output", ""),
+                float(window_summary.get("average_queue_length", 0.0)),
+                float(window_summary.get("trunk_queue_ratio", 0.0)),
+                float(window_summary.get("throughput_change_rate", 0.0)),
+                float(window_summary.get("spillback_risk", 0.0)),
+                float(window_summary.get("average_throughput", 0.0)),
+            ])
 
     def _record_mode_switch(self, current_time, old_mode, new_mode, reason, window_summary):
         self.mode_switch_count += 1
@@ -614,22 +699,22 @@ class CityFlowEnv:
                 current_time, old_mode, new_mode, reason
             )
         )
-        with open(self.path_to_mode_log, "a") as f:
-            f.write(
-                "{0},{1},{2},\"{3}\",{4:.6f},{5:.6f},{6:.6f},{7:.6f}\n".format(
-                    current_time,
-                    old_mode,
-                    new_mode,
-                    reason.replace('"', "'"),
-                    window_summary["average_queue_length"],
-                    window_summary["trunk_queue_ratio"],
-                    window_summary["throughput_change_rate"],
-                    window_summary["spillback_risk"],
-                )
-            )
+        with open(self.path_to_mode_log, "a", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow([
+                current_time,
+                old_mode,
+                new_mode,
+                reason,
+                float(window_summary["average_queue_length"]),
+                float(window_summary["trunk_queue_ratio"]),
+                float(window_summary["throughput_change_rate"]),
+                float(window_summary["spillback_risk"]),
+            ])
 
     def _reset_episode_metrics(self):
         self.mode_switch_count = 0
+        self.selector_fallback_count = 0
         self.system_vehicle_stats = {}
         self.previous_active_vehicle_ids = set()
         self.episode_total_reward = 0.0
@@ -696,6 +781,9 @@ class CityFlowEnv:
             "throughput": float(self.episode_completed_vehicle_count),
             "average_travel_time": average_travel_time,
             "current_mode": self.current_reward_mode,
+            "selector_type": self.selector_type,
+            "selector_backend": self.current_selector_backend,
+            "selector_fallback_count": int(self.selector_fallback_count),
             "mode_switch_count": int(self.mode_switch_count),
             "episode_duration": current_time,
         }
@@ -704,7 +792,7 @@ class CityFlowEnv:
         print(" ============= self.eng.reset() to be implemented ==========")
         cityflow_config = {
             "interval": self.dic_traffic_env_conf["INTERVAL"],
-            "seed": 0,
+            "seed": int(self.dic_traffic_env_conf.get("SEED", 0)),
             "laneChange": True,
             "dir": self.path_to_work_directory+"/",
             "roadnetFile": self.dic_traffic_env_conf["ROADNET_FILE"],
@@ -762,6 +850,10 @@ class CityFlowEnv:
         self.previous_mode_window_summary = None
         self.current_reward_mode = self.dic_traffic_env_conf.get("REWARD_MODE", "balanced")
         self.current_mode_reason = "initial_reward_mode"
+        self.current_selector_backend = getattr(self.mode_selector, "backend", self.selector_type)
+        self.current_selector_fallback_triggered = False
+        self.current_selector_raw_output = ""
+        self.current_window_features = {}
         self._capture_mode_selector_snapshot()
         self._update_episode_vehicle_metrics()
         state, done = self.get_state()
@@ -867,7 +959,10 @@ class CityFlowEnv:
                                                    "state": before_action_feature[inter_ind],
                                                    "action": action[inter_ind],
                                                    "reward_mode": self.current_reward_mode,
-                                                   "mode_reason": self.current_mode_reason})
+                                                   "mode_reason": self.current_mode_reason,
+                                                   "selector_type": self.selector_type,
+                                                   "selector_backend": self.current_selector_backend,
+                                                   "selector_fallback_triggered": self.current_selector_fallback_triggered})
 
     def batch_log_2(self):
         """

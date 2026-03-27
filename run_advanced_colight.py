@@ -13,7 +13,15 @@ def parse_args():
     parser.add_argument("-reward_mode", type=str,          default="balanced",
                         choices=["balanced", "queue_clearance", "main_road_priority", "congestion_resistance"])
     parser.add_argument("-disable_mode_selector", action="store_true", default=False)
+    parser.add_argument("-selector_type", type=str, default="rule", choices=["rule", "llm"])
     parser.add_argument("-mode_selector_window", type=int, default=300)
+    parser.add_argument("-llm_backend", type=str, default="mock", choices=["mock", "local", "api"])
+    parser.add_argument("-llm_model", type=str, default="mock-llm-mode-selector")
+    parser.add_argument("-llm_api_base", type=str, default=None)
+    parser.add_argument("-llm_api_key", type=str, default=None)
+    parser.add_argument("-llm_timeout", type=int, default=30)
+    parser.add_argument("-llm_temperature", type=float, default=0.0)
+    parser.add_argument("-seed", type=int, default=0)
     parser.add_argument("-eightphase",  action="store_true", default=False)
     parser.add_argument("-gen",        type=int,            default=1)
     parser.add_argument("-multi_process", action="store_true", default=True)
@@ -68,9 +76,17 @@ def main(in_args=None):
                 "lane_enter_running_part",
                 "adjacency_matrix",
             ],
+            "SEED": in_args.seed,
             "REWARD_MODE": in_args.reward_mode,
             "MODE_SELECTOR_ENABLED": not in_args.disable_mode_selector,
+            "SELECTOR_TYPE": in_args.selector_type,
             "MODE_SELECTOR_WINDOW": in_args.mode_selector_window,
+            "LLM_SELECTOR_BACKEND": in_args.llm_backend,
+            "LLM_SELECTOR_MODEL": in_args.llm_model,
+            "LLM_SELECTOR_API_BASE": in_args.llm_api_base,
+            "LLM_SELECTOR_API_KEY": in_args.llm_api_key,
+            "LLM_SELECTOR_TIMEOUT": in_args.llm_timeout,
+            "LLM_SELECTOR_TEMPERATURE": in_args.llm_temperature,
 
             "DIC_REWARD_INFO": {
                 "queue_length": -0.25,

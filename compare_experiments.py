@@ -53,8 +53,26 @@ def build_experiment_label(traffic_conf):
     model_name = traffic_conf.get("MODEL_NAME", "Unknown")
     display_name = MODEL_DISPLAY_NAMES.get(model_name, model_name)
     if traffic_conf.get("MODE_SELECTOR_ENABLED", False):
+        selector_type = str(traffic_conf.get("SELECTOR_TYPE", "rule")).lower()
+        if selector_type == "llm":
+            return "LLMMode + {0}".format(display_name)
         return "RuleMode + {0}".format(display_name)
     return "Pure {0}".format(display_name)
+
+
+def build_selector_display(traffic_conf, final_row=None):
+    if not traffic_conf.get("MODE_SELECTOR_ENABLED", False):
+        return "off"
+
+    selector_type = str(
+        (final_row or {}).get("selector_type", traffic_conf.get("SELECTOR_TYPE", "rule"))
+    ).lower()
+    selector_backend = str(
+        (final_row or {}).get("selector_backend", traffic_conf.get("LLM_SELECTOR_BACKEND", "rule"))
+    ).lower()
+    if selector_type == "llm":
+        return "llm:{0}".format(selector_backend or "mock")
+    return "rule"
 
 
 def load_episode_rows(experiment_dir):
@@ -155,7 +173,7 @@ def render_markdown_table(experiments):
             "| {0} | {1} | {2} | {3} | {4:.2f} | {5:.2f} | {6:.2f} | {7:.2f} | {8:.2f} | {9} |".format(
                 exp["label"],
                 traffic_conf.get("MODEL_NAME", "Unknown"),
-                "on" if traffic_conf.get("MODE_SELECTOR_ENABLED", False) else "off",
+                build_selector_display(traffic_conf, final_row),
                 len(exp["rows"]),
                 safe_float(final_row.get("total_reward")),
                 safe_float(final_row.get("average_waiting_time")),

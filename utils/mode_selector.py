@@ -20,6 +20,8 @@ class ModeSelector:
     def __init__(self, window_size=300, thresholds=None):
         self.window_size = max(1, int(window_size))
         self.thresholds = copy.deepcopy(self.DEFAULT_THRESHOLDS)
+        self.selector_type = "rule"
+        self.backend = "rule"
         if thresholds:
             self.thresholds.update(thresholds)
 
@@ -121,3 +123,18 @@ class ModeSelector:
             spillback_risk,
         )
         return "balanced", reason
+
+    def select_mode_with_reason(self, features, current_mode="balanced"):
+        return self.select_mode(features, current_mode=current_mode)
+
+    def select_mode_with_details(self, features, current_mode="balanced"):
+        mode, reason = self.select_mode(features, current_mode=current_mode)
+        return {
+            "mode": mode,
+            "reason": reason,
+            "selector_type": self.selector_type,
+            "backend": self.backend,
+            "fallback_triggered": False,
+            "raw_output": mode,
+            "prompt": "",
+        }

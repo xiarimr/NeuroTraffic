@@ -85,6 +85,9 @@ class Generator:
             "generator": self.cnt_gen,
             "model_name": self.dic_traffic_env_conf["MODEL_NAME"],
             "mode_selector_enabled": self.dic_traffic_env_conf.get("MODE_SELECTOR_ENABLED", True),
+            "selector_type": self.dic_traffic_env_conf.get("SELECTOR_TYPE", "rule"),
+            "selector_backend": self.dic_traffic_env_conf.get("LLM_SELECTOR_BACKEND", "rule")
+            if self.dic_traffic_env_conf.get("SELECTOR_TYPE", "rule") == "llm" else "rule",
             "reward_mode": self.dic_traffic_env_conf.get("REWARD_MODE", "balanced"),
             **episode_summary
         })

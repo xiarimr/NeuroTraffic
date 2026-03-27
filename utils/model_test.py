@@ -82,6 +82,9 @@ def test(model_dir, cnt_round, run_cnt, _dic_traffic_env_conf):
             "generator": "",
             "model_name": dic_traffic_env_conf["MODEL_NAME"],
             "mode_selector_enabled": dic_traffic_env_conf.get("MODE_SELECTOR_ENABLED", True),
+            "selector_type": dic_traffic_env_conf.get("SELECTOR_TYPE", "rule"),
+            "selector_backend": dic_traffic_env_conf.get("LLM_SELECTOR_BACKEND", "rule")
+            if dic_traffic_env_conf.get("SELECTOR_TYPE", "rule") == "llm" else "rule",
             "reward_mode": dic_traffic_env_conf.get("REWARD_MODE", "balanced"),
             **episode_summary
         })
