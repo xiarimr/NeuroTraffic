@@ -4,9 +4,9 @@
 <line x1="70" y1="340" x2="930" y2="340" stroke="#333"/>
 <line x1="70" y1="40" x2="70" y2="340" stroke="#333"/>
 <rect x="177.50" y="40.00" width="215.00" height="300.00" fill="#1f77b4"/>
-<text x="177.50" y="34.00" font-size="12" font-family="Arial">569.73</text>
+<text x="177.50" y="34.00" font-size="12" font-family="Arial">725.86</text>
 <text x="177.50" y="358" font-size="12" font-family="Arial">Pure DQN</text>
-<rect x="607.50" y="189.36" width="215.00" height="150.64" fill="#ff7f0e"/>
-<text x="607.50" y="183.36" font-size="12" font-family="Arial">286.09</text>
+<rect x="607.50" y="217.69" width="215.00" height="122.31" fill="#ff7f0e"/>
+<text x="607.50" y="211.69" font-size="12" font-family="Arial">295.94</text>
 <text x="607.50" y="358" font-size="12" font-family="Arial">RuleMode + DQN</text>
 </svg>

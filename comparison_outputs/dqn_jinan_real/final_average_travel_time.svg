@@ -3,10 +3,10 @@
 <text x="70" y="24" font-size="18" font-family="Arial">Final Average Travel Time</text>
 <line x1="70" y1="340" x2="930" y2="340" stroke="#333"/>
 <line x1="70" y1="40" x2="70" y2="340" stroke="#333"/>
-<rect x="177.50" y="82.77" width="215.00" height="257.23" fill="#1f77b4"/>
-<text x="177.50" y="76.77" font-size="12" font-family="Arial">304.37</text>
+<rect x="177.50" y="40.00" width="215.00" height="300.00" fill="#1f77b4"/>
+<text x="177.50" y="34.00" font-size="12" font-family="Arial">546.34</text>
 <text x="177.50" y="358" font-size="12" font-family="Arial">Pure DQN</text>
-<rect x="607.50" y="40.00" width="215.00" height="300.00" fill="#ff7f0e"/>
-<text x="607.50" y="34.00" font-size="12" font-family="Arial">354.99</text>
+<rect x="607.50" y="131.03" width="215.00" height="208.97" fill="#ff7f0e"/>
+<text x="607.50" y="125.03" font-size="12" font-family="Arial">380.57</text>
 <text x="607.50" y="358" font-size="12" font-family="Arial">RuleMode + DQN</text>
 </svg>
