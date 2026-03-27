@@ -25,8 +25,10 @@ def parse_args():
     parser.add_argument("-mode_selector_window", type=int, default=300)
     parser.add_argument("-reward_mode", type=str, default="balanced",
                         choices=["balanced", "queue_clearance", "main_road_priority", "congestion_resistance"])
-    parser.add_argument("-llm_backend", type=str, default="mock", choices=["mock", "local", "api"])
-    parser.add_argument("-llm_model", type=str, default="mock-llm-mode-selector")
+    parser.add_argument("-llm_backend", type=str, default="api", choices=["mock", "local", "api"])
+    parser.add_argument("-llm_model", type=str, default="deepseek-chat")
+    parser.add_argument("-llm_api_base", type=str, default="https://api.deepseek.com")
+    parser.add_argument("-llm_api_key", type=str, default=None)
     parser.add_argument("-seed", type=int, default=0)
     return parser.parse_args()
 
@@ -79,6 +81,8 @@ def main(in_args=None):
         "MODE_SELECTOR_WINDOW": in_args.mode_selector_window,
         "LLM_SELECTOR_BACKEND": in_args.llm_backend,
         "LLM_SELECTOR_MODEL": in_args.llm_model,
+        "LLM_SELECTOR_API_BASE": in_args.llm_api_base,
+        "LLM_SELECTOR_API_KEY": in_args.llm_api_key,
         "DIC_REWARD_INFO": {
             "queue_length": -0.25,
         },

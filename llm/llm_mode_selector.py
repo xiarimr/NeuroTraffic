@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import urllib.error
 import urllib.request
@@ -43,13 +44,15 @@ def prompt_builder(features, current_mode="balanced"):
 
 class LLMSelector:
     SUPPORTED_MODES = SUPPORTED_MODES
+    DEFAULT_DEEPSEEK_BASE_URL = "https://api.deepseek.com"
+    DEFAULT_DEEPSEEK_MODEL = "deepseek-chat"
 
     def __init__(
         self,
         window_size=300,
-        backend="mock",
-        model_name="mock-llm-mode-selector",
-        api_base=None,
+        backend="api",
+        model_name=DEFAULT_DEEPSEEK_MODEL,
+        api_base=DEFAULT_DEEPSEEK_BASE_URL,
         api_key=None,
         timeout=30,
         temperature=0.0,
@@ -62,8 +65,8 @@ class LLMSelector:
         self.window_size = max(1, int(window_size))
         self.backend = backend
         self.model_name = model_name
-        self.api_base = api_base
-        self.api_key = api_key
+        self.api_base = api_base or os.environ.get("DEEPSEEK_API_BASE") or self.DEFAULT_DEEPSEEK_BASE_URL
+        self.api_key = api_key or os.environ.get("DEEPSEEK_API_KEY")
         self.timeout = timeout
         self.temperature = temperature
         self.default_mode = default_mode if default_mode in self.SUPPORTED_MODES else "balanced"
@@ -76,10 +79,10 @@ class LLMSelector:
         dic_traffic_env_conf = dic_traffic_env_conf or {}
         return cls(
             window_size=dic_traffic_env_conf.get("MODE_SELECTOR_WINDOW", 300),
-            backend=dic_traffic_env_conf.get("LLM_SELECTOR_BACKEND", "mock"),
-            model_name=dic_traffic_env_conf.get("LLM_SELECTOR_MODEL", "mock-llm-mode-selector"),
-            api_base=dic_traffic_env_conf.get("LLM_SELECTOR_API_BASE"),
-            api_key=dic_traffic_env_conf.get("LLM_SELECTOR_API_KEY"),
+            backend=dic_traffic_env_conf.get("LLM_SELECTOR_BACKEND", "api"),
+            model_name=dic_traffic_env_conf.get("LLM_SELECTOR_MODEL", cls.DEFAULT_DEEPSEEK_MODEL),
+            api_base=dic_traffic_env_conf.get("LLM_SELECTOR_API_BASE") or os.environ.get("DEEPSEEK_API_BASE") or cls.DEFAULT_DEEPSEEK_BASE_URL,
+            api_key=dic_traffic_env_conf.get("LLM_SELECTOR_API_KEY") or os.environ.get("DEEPSEEK_API_KEY"),
             timeout=dic_traffic_env_conf.get("LLM_SELECTOR_TIMEOUT", 30),
             temperature=dic_traffic_env_conf.get("LLM_SELECTOR_TEMPERATURE", 0.0),
             default_mode=dic_traffic_env_conf.get("REWARD_MODE", "balanced"),
@@ -175,6 +178,8 @@ class LLMSelector:
 
         if not self.api_base:
             return self._query_mock(prompt, features, current_mode)
+        if not self.api_key:
+            return "selector_error: missing_api_key"
 
         url = self.api_base.rstrip("/")
         if not url.endswith("/chat/completions"):
@@ -183,8 +188,10 @@ class LLMSelector:
         payload = {
             "model": self.model_name,
             "temperature": self.temperature,
+            "max_tokens": 16,
+            "stream": False,
             "messages": [
-                {"role": "system", "content": "Return only one traffic control mode."},
+                {"role": "system", "content": "Return only one traffic control mode name from: balanced, queue_clearance, main_road_priority, congestion_resistance."},
                 {"role": "user", "content": prompt},
             ],
         }
