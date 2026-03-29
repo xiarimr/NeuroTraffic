@@ -1,5 +1,0 @@
-torch==2.3.0
-keras>=3.0.0
-cityflow
-numpy
-pandas
