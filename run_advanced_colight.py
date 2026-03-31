@@ -28,23 +28,24 @@ def parse_args():
     parser.add_argument("-workers",    type=int,            default=3)
     parser.add_argument("-hangzhou",    action="store_true", default=False)
     parser.add_argument("-jinan",       action="store_true", default=True)
+    parser.add_argument("-num_rounds", type=int, default=None)
     return parser.parse_args()
 
 
-def main(in_args=None):
+def main(in_args):
     if in_args.hangzhou:
         count = 3600
         road_net = "4_4"
         traffic_file_list = ["anon_4_4_hangzhou_real.json",
                              "anon_4_4_hangzhou_real_5816.json"]
-        num_rounds = 80
+        num_rounds = 60 if in_args.num_rounds is None else in_args.num_rounds
         template = "Hangzhou"
     elif in_args.jinan:
         count = 3600
         road_net = "3_4"
         traffic_file_list = ["anon_3_4_jinan_real.json", "anon_3_4_jinan_real_2000.json",
                              "anon_3_4_jinan_real_2500.json"]
-        num_rounds = 80
+        num_rounds = 60 if in_args.num_rounds is None else in_args.num_rounds
         template = "Jinan"
 
     NUM_COL = int(road_net.split('_')[1])

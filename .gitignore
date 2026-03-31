@@ -12,3 +12,13 @@ models/__pycache__/
 models/.ipynb_checkpoints/
 utils/__pycache__/
 tmp_compare/
+test.txt
+selector_training_subsets/
+selector_dataset_exports/
+scripts/
+comparison_outputs/llm_dqn_2/
+comparison_outputs/llm_dqn_2_2000/
+comparison_outputs/llm_dqn_2_2500/
+comparison_outputs/llm_dqn_3/
+comparison_outputs/llm_dqn_3_2000/
+comparison_outputs/llm_dqn_3_2500/
