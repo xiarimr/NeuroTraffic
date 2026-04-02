@@ -3,7 +3,6 @@ __pycache__/
 LICENSE
 PROJECT_ARCHITECTURE_CN.md
 records/
-model/
 .ipynb_checkpoints/
 comparison_outputs/dqn_jinan_real/.ipynb_checkpoints/
 comparison_outputs/dqn_jinan_real_2000/.ipynb_checkpoints/
