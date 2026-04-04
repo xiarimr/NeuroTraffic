@@ -18,6 +18,12 @@ class ConstructSample:
         self.samples = []
         self.samples_all_intersection = [None]*self.dic_traffic_env_conf['NUM_INTERSECTIONS']
         self.reward_builder = RewardBuilder.from_env_config(dic_traffic_env_conf)
+        self.phase_encoding = self.dic_traffic_env_conf.get("PHASE", {})
+        if self.phase_encoding:
+            self.zero_phase_encoding = [0] * len(next(iter(self.phase_encoding.values())))
+        else:
+            self.zero_phase_encoding = [0]
+        self._warned_special_phases = set()
 
         self.interval = self.dic_traffic_env_conf["MIN_ACTION_TIME"]
         self.measure_time = self.dic_traffic_env_conf["MEASURE_TIME"]
@@ -44,6 +50,30 @@ class ConstructSample:
             self.logging_data_list_per_gen.append(logging_data)
         return 1
 
+    def _encode_phase(self, phase_value):
+        if isinstance(phase_value, np.ndarray):
+            phase_id = phase_value[0] if phase_value.size else None
+        elif isinstance(phase_value, (list, tuple)):
+            phase_id = phase_value[0] if phase_value else None
+        else:
+            phase_id = phase_value
+
+        encoding = self.phase_encoding.get(phase_id)
+        if encoding is None and phase_id is not None:
+            encoding = self.phase_encoding.get(str(phase_id))
+        if encoding is not None:
+            return list(encoding)
+
+        if phase_id not in self._warned_special_phases:
+            print(
+                "Warning: encountered unsupported phase {0} in round {1}; using zero phase encoding.".format(
+                    phase_id,
+                    self.cnt_round,
+                )
+            )
+            self._warned_special_phases.add(phase_id)
+        return list(self.zero_phase_encoding)
+
     def construct_state(self, features, time, i):
         state = self.logging_data_list_per_gen[i][time]
         assert time == state["time"]
@@ -52,7 +82,7 @@ class ConstructSample:
             for key, value in state["state"].items():
                 if key in features:
                     if "cur_phase" in key:
-                        state_after_selection[key] = self.dic_traffic_env_conf['PHASE'][value[0]]
+                        state_after_selection[key] = self._encode_phase(value)
                     else:
                         state_after_selection[key] = value
         else:

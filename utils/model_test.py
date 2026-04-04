@@ -4,6 +4,7 @@ from .cityflow_env import CityFlowEnv
 from .experiment_logger import ExperimentLogger
 import json
 import os
+import traceback
 
 
 
@@ -89,5 +90,6 @@ def test(model_dir, cnt_round, run_cnt, _dic_traffic_env_conf):
             **episode_summary
         })
         env.end_cityflow()
-    except:
+    except Exception:
         print("============== error occurs in model_test ============")
+        print(traceback.format_exc())

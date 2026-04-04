@@ -1,0 +1,544 @@
+{
+  "experiment_dir": "/root/autodl-tmp/NeuroTraffic/records/exp_llmmode_dqn_100/anon_3_4_jinan_real_2000.json_03_30_16_03_09",
+  "model_dir": "/root/autodl-tmp/NeuroTraffic/model/exp_llmmode_dqn_100/anon_3_4_jinan_real_2000.json_03_30_16_03_09",
+  "target_rounds": [
+    0,
+    5,
+    10,
+    15,
+    20,
+    25,
+    30,
+    35,
+    40,
+    45,
+    50,
+    55
+  ],
+  "candidate_modes": [
+    "balanced",
+    "queue_clearance",
+    "main_road_priority",
+    "congestion_resistance"
+  ],
+  "evaluation_run_counts": 1800,
+  "seed": 0,
+  "round_oracle": {
+    "0": {
+      "oracle_mode": "balanced",
+      "ranking": [
+        "balanced",
+        "main_road_priority",
+        "congestion_resistance",
+        "queue_clearance"
+      ],
+      "metrics_by_mode": {
+        "balanced": {
+          "total_reward": -332986.25,
+          "average_waiting_time": 546.7992610837439,
+          "average_queue_length": 61.664120370370306,
+          "throughput": 860.0,
+          "average_travel_time": 677.913382594417,
+          "episode_duration": 1800.0
+        },
+        "queue_clearance": {
+          "total_reward": -385107.0,
+          "average_waiting_time": 645.4323418516967,
+          "average_queue_length": 71.31611111111116,
+          "throughput": 623.0,
+          "average_travel_time": 746.3137829912024,
+          "episode_duration": 1800.0
+        },
+        "main_road_priority": {
+          "total_reward": -332730.0,
+          "average_waiting_time": 543.498570845243,
+          "average_queue_length": 61.616666666666625,
+          "throughput": 916.0,
+          "average_travel_time": 678.0698244181299,
+          "episode_duration": 1800.0
+        },
+        "congestion_resistance": {
+          "total_reward": -384370.0,
+          "average_waiting_time": 646.8186790071519,
+          "average_queue_length": 71.17962962962953,
+          "throughput": 622.0,
+          "average_travel_time": 746.1236853176273,
+          "episode_duration": 1800.0
+        }
+      }
+    },
+    "5": {
+      "oracle_mode": "queue_clearance",
+      "ranking": [
+        "queue_clearance",
+        "congestion_resistance",
+        "main_road_priority",
+        "balanced"
+      ],
+      "metrics_by_mode": {
+        "balanced": {
+          "total_reward": -161117.25,
+          "average_waiting_time": 262.88295269168026,
+          "average_queue_length": 29.836527777777786,
+          "throughput": 1472.0,
+          "average_travel_time": 442.42292006525287,
+          "episode_duration": 1800.0
+        },
+        "queue_clearance": {
+          "total_reward": -120839.5,
+          "average_waiting_time": 197.18352365415987,
+          "average_queue_length": 22.377685185185182,
+          "throughput": 1714.0,
+          "average_travel_time": 400.3042414355628,
+          "episode_duration": 1800.0
+        },
+        "main_road_priority": {
+          "total_reward": -143355.5,
+          "average_waiting_time": 233.92659053833606,
+          "average_queue_length": 26.547314814814822,
+          "throughput": 1630.0,
+          "average_travel_time": 429.29282218597064,
+          "episode_duration": 1800.0
+        },
+        "congestion_resistance": {
+          "total_reward": -130781.75,
+          "average_waiting_time": 213.40497553017946,
+          "average_queue_length": 24.218842592592615,
+          "throughput": 1656.0,
+          "average_travel_time": 410.28140293637847,
+          "episode_duration": 1800.0
+        }
+      }
+    },
+    "10": {
+      "oracle_mode": "main_road_priority",
+      "ranking": [
+        "main_road_priority",
+        "queue_clearance",
+        "congestion_resistance",
+        "balanced"
+      ],
+      "metrics_by_mode": {
+        "balanced": {
+          "total_reward": -127353.0,
+          "average_waiting_time": 212.9452569995821,
+          "average_queue_length": 23.583888888888893,
+          "throughput": 1617.0,
+          "average_travel_time": 410.0359381529461,
+          "episode_duration": 1800.0
+        },
+        "queue_clearance": {
+          "total_reward": -123763.0,
+          "average_waiting_time": 207.54400670578374,
+          "average_queue_length": 22.91907407407405,
+          "throughput": 1632.0,
+          "average_travel_time": 406.14543168482817,
+          "episode_duration": 1800.0
+        },
+        "main_road_priority": {
+          "total_reward": -119259.75,
+          "average_waiting_time": 199.58803847762442,
+          "average_queue_length": 22.08513888888891,
+          "throughput": 1659.0,
+          "average_travel_time": 400.8887494772062,
+          "episode_duration": 1800.0
+        },
+        "congestion_resistance": {
+          "total_reward": -126062.75,
+          "average_waiting_time": 211.0774058577406,
+          "average_queue_length": 23.344953703703716,
+          "throughput": 1622.0,
+          "average_travel_time": 409.02092050209205,
+          "episode_duration": 1800.0
+        }
+      }
+    },
+    "15": {
+      "oracle_mode": "balanced",
+      "ranking": [
+        "balanced",
+        "congestion_resistance",
+        "main_road_priority",
+        "queue_clearance"
+      ],
+      "metrics_by_mode": {
+        "balanced": {
+          "total_reward": -47315.75,
+          "average_waiting_time": 77.26876019575856,
+          "average_queue_length": 8.762175925925945,
+          "throughput": 1979.0,
+          "average_travel_time": 297.6973898858075,
+          "episode_duration": 1800.0
+        },
+        "queue_clearance": {
+          "total_reward": -79402.5,
+          "average_waiting_time": 131.64995857497928,
+          "average_queue_length": 14.70416666666668,
+          "throughput": 1815.0,
+          "average_travel_time": 343.73156586578295,
+          "episode_duration": 1800.0
+        },
+        "main_road_priority": {
+          "total_reward": -56363.0,
+          "average_waiting_time": 92.5892490767337,
+          "average_queue_length": 10.437592592592603,
+          "throughput": 1911.0,
+          "average_travel_time": 309.84776364382435,
+          "episode_duration": 1800.0
+        },
+        "congestion_resistance": {
+          "total_reward": -55841.0,
+          "average_waiting_time": 91.52067130577159,
+          "average_queue_length": 10.34092592592593,
+          "throughput": 1920.0,
+          "average_travel_time": 308.7912402783463,
+          "episode_duration": 1800.0
+        }
+      }
+    },
+    "20": {
+      "oracle_mode": "congestion_resistance",
+      "ranking": [
+        "congestion_resistance",
+        "balanced",
+        "main_road_priority",
+        "queue_clearance"
+      ],
+      "metrics_by_mode": {
+        "balanced": {
+          "total_reward": -88077.5,
+          "average_waiting_time": 143.74877650897227,
+          "average_queue_length": 16.310648148148143,
+          "throughput": 1810.0,
+          "average_travel_time": 349.15130505709624,
+          "episode_duration": 1800.0
+        },
+        "queue_clearance": {
+          "total_reward": -90179.25,
+          "average_waiting_time": 147.1668026101142,
+          "average_queue_length": 16.69986111111112,
+          "throughput": 1788.0,
+          "average_travel_time": 352.6916802610114,
+          "episode_duration": 1800.0
+        },
+        "main_road_priority": {
+          "total_reward": -89472.25,
+          "average_waiting_time": 146.0362969004894,
+          "average_queue_length": 16.568935185185186,
+          "throughput": 1806.0,
+          "average_travel_time": 352.0322185970636,
+          "episode_duration": 1800.0
+        },
+        "congestion_resistance": {
+          "total_reward": -84699.5,
+          "average_waiting_time": 138.24877650897227,
+          "average_queue_length": 15.6850925925926,
+          "throughput": 1816.0,
+          "average_travel_time": 345.8099510603589,
+          "episode_duration": 1800.0
+        }
+      }
+    },
+    "25": {
+      "oracle_mode": "main_road_priority",
+      "ranking": [
+        "main_road_priority",
+        "queue_clearance",
+        "congestion_resistance",
+        "balanced"
+      ],
+      "metrics_by_mode": {
+        "balanced": {
+          "total_reward": -48118.25,
+          "average_waiting_time": 78.57504078303425,
+          "average_queue_length": 8.910787037037043,
+          "throughput": 1968.0,
+          "average_travel_time": 297.6977977161501,
+          "episode_duration": 1800.0
+        },
+        "queue_clearance": {
+          "total_reward": -38829.75,
+          "average_waiting_time": 63.43515497553018,
+          "average_queue_length": 7.1906944444444445,
+          "throughput": 2042.0,
+          "average_travel_time": 287.3747960848287,
+          "episode_duration": 1800.0
+        },
+        "main_road_priority": {
+          "total_reward": -34953.5,
+          "average_waiting_time": 57.1015497553018,
+          "average_queue_length": 6.472870370370367,
+          "throughput": 2086.0,
+          "average_travel_time": 284.79649265905385,
+          "episode_duration": 1800.0
+        },
+        "congestion_resistance": {
+          "total_reward": -38829.75,
+          "average_waiting_time": 63.43515497553018,
+          "average_queue_length": 7.1906944444444445,
+          "throughput": 2042.0,
+          "average_travel_time": 287.3747960848287,
+          "episode_duration": 1800.0
+        }
+      }
+    },
+    "30": {
+      "oracle_mode": "main_road_priority",
+      "ranking": [
+        "main_road_priority",
+        "balanced",
+        "queue_clearance",
+        "congestion_resistance"
+      ],
+      "metrics_by_mode": {
+        "balanced": {
+          "total_reward": -35811.25,
+          "average_waiting_time": 58.491435562805876,
+          "average_queue_length": 6.631712962962971,
+          "throughput": 2046.0,
+          "average_travel_time": 282.7736541598695,
+          "episode_duration": 1800.0
+        },
+        "queue_clearance": {
+          "total_reward": -41575.25,
+          "average_waiting_time": 67.89518760195759,
+          "average_queue_length": 7.699120370370362,
+          "throughput": 2007.0,
+          "average_travel_time": 288.82871125611746,
+          "episode_duration": 1800.0
+        },
+        "main_road_priority": {
+          "total_reward": -32529.0,
+          "average_waiting_time": 53.14110929853181,
+          "average_queue_length": 6.023888888888889,
+          "throughput": 2077.0,
+          "average_travel_time": 280.7920065252855,
+          "episode_duration": 1800.0
+        },
+        "congestion_resistance": {
+          "total_reward": -41575.25,
+          "average_waiting_time": 67.89518760195759,
+          "average_queue_length": 7.699120370370362,
+          "throughput": 2007.0,
+          "average_travel_time": 288.83075040783035,
+          "episode_duration": 1800.0
+        }
+      }
+    },
+    "35": {
+      "oracle_mode": "balanced",
+      "ranking": [
+        "balanced",
+        "main_road_priority",
+        "congestion_resistance",
+        "queue_clearance"
+      ],
+      "metrics_by_mode": {
+        "balanced": {
+          "total_reward": -82219.75,
+          "average_waiting_time": 134.19494290375204,
+          "average_queue_length": 15.225879629629626,
+          "throughput": 1833.0,
+          "average_travel_time": 340.5273246329527,
+          "episode_duration": 1800.0
+        },
+        "queue_clearance": {
+          "total_reward": -87341.5,
+          "average_waiting_time": 142.52243066884176,
+          "average_queue_length": 16.17435185185187,
+          "throughput": 1806.0,
+          "average_travel_time": 346.05872756933115,
+          "episode_duration": 1800.0
+        },
+        "main_road_priority": {
+          "total_reward": -85906.25,
+          "average_waiting_time": 140.20513866231647,
+          "average_queue_length": 15.908564814814804,
+          "throughput": 1818.0,
+          "average_travel_time": 344.1162316476346,
+          "episode_duration": 1800.0
+        },
+        "congestion_resistance": {
+          "total_reward": -87341.5,
+          "average_waiting_time": 142.52243066884176,
+          "average_queue_length": 16.17435185185187,
+          "throughput": 1806.0,
+          "average_travel_time": 346.057911908646,
+          "episode_duration": 1800.0
+        }
+      }
+    },
+    "40": {
+      "oracle_mode": "balanced",
+      "ranking": [
+        "balanced",
+        "main_road_priority",
+        "congestion_resistance",
+        "queue_clearance"
+      ],
+      "metrics_by_mode": {
+        "balanced": {
+          "total_reward": -44901.5,
+          "average_waiting_time": 73.3225938009788,
+          "average_queue_length": 8.31509259259258,
+          "throughput": 2005.0,
+          "average_travel_time": 294.5020391517129,
+          "episode_duration": 1800.0
+        },
+        "queue_clearance": {
+          "total_reward": -78804.5,
+          "average_waiting_time": 128.60725938009787,
+          "average_queue_length": 14.593425925925922,
+          "throughput": 1831.0,
+          "average_travel_time": 335.9759380097879,
+          "episode_duration": 1800.0
+        },
+        "main_road_priority": {
+          "total_reward": -44595.5,
+          "average_waiting_time": 72.8389070146819,
+          "average_queue_length": 8.258425925925922,
+          "throughput": 2001.0,
+          "average_travel_time": 295.123572593801,
+          "episode_duration": 1800.0
+        },
+        "congestion_resistance": {
+          "total_reward": -76237.25,
+          "average_waiting_time": 124.42414355628058,
+          "average_queue_length": 14.118009259259258,
+          "throughput": 1844.0,
+          "average_travel_time": 333.228792822186,
+          "episode_duration": 1800.0
+        }
+      }
+    },
+    "45": {
+      "oracle_mode": "balanced",
+      "ranking": [
+        "balanced",
+        "main_road_priority",
+        "queue_clearance",
+        "congestion_resistance"
+      ],
+      "metrics_by_mode": {
+        "balanced": {
+          "total_reward": -85283.75,
+          "average_waiting_time": 139.17903752039152,
+          "average_queue_length": 15.793287037037043,
+          "throughput": 1814.0,
+          "average_travel_time": 343.7573409461664,
+          "episode_duration": 1800.0
+        },
+        "queue_clearance": {
+          "total_reward": -87303.25,
+          "average_waiting_time": 142.4743066884176,
+          "average_queue_length": 16.167268518518533,
+          "throughput": 1807.0,
+          "average_travel_time": 346.1031810766721,
+          "episode_duration": 1800.0
+        },
+        "main_road_priority": {
+          "total_reward": -86883.5,
+          "average_waiting_time": 141.78915171288745,
+          "average_queue_length": 16.08953703703704,
+          "throughput": 1804.0,
+          "average_travel_time": 345.8605220228385,
+          "episode_duration": 1800.0
+        },
+        "congestion_resistance": {
+          "total_reward": -87303.25,
+          "average_waiting_time": 142.4743066884176,
+          "average_queue_length": 16.167268518518533,
+          "throughput": 1807.0,
+          "average_travel_time": 346.1035889070147,
+          "episode_duration": 1800.0
+        }
+      }
+    },
+    "50": {
+      "oracle_mode": "main_road_priority",
+      "ranking": [
+        "main_road_priority",
+        "balanced",
+        "queue_clearance",
+        "congestion_resistance"
+      ],
+      "metrics_by_mode": {
+        "balanced": {
+          "total_reward": -95143.25,
+          "average_waiting_time": 155.25530179445352,
+          "average_queue_length": 17.61912037037038,
+          "throughput": 1791.0,
+          "average_travel_time": 357.1105220228385,
+          "episode_duration": 1800.0
+        },
+        "queue_clearance": {
+          "total_reward": -106520.5,
+          "average_waiting_time": 173.8062805872757,
+          "average_queue_length": 19.726018518518515,
+          "throughput": 1746.0,
+          "average_travel_time": 372.65619902120716,
+          "episode_duration": 1800.0
+        },
+        "main_road_priority": {
+          "total_reward": -92084.25,
+          "average_waiting_time": 150.2679445350734,
+          "average_queue_length": 17.052638888888882,
+          "throughput": 1799.0,
+          "average_travel_time": 352.5469004893964,
+          "episode_duration": 1800.0
+        },
+        "congestion_resistance": {
+          "total_reward": -106520.5,
+          "average_waiting_time": 173.8062805872757,
+          "average_queue_length": 19.726018518518515,
+          "throughput": 1746.0,
+          "average_travel_time": 372.65619902120716,
+          "episode_duration": 1800.0
+        }
+      }
+    },
+    "55": {
+      "oracle_mode": "queue_clearance",
+      "ranking": [
+        "queue_clearance",
+        "congestion_resistance",
+        "main_road_priority",
+        "balanced"
+      ],
+      "metrics_by_mode": {
+        "balanced": {
+          "total_reward": -108381.25,
+          "average_waiting_time": 176.85807504078304,
+          "average_queue_length": 20.07060185185186,
+          "throughput": 1734.0,
+          "average_travel_time": 375.6182707993475,
+          "episode_duration": 1800.0
+        },
+        "queue_clearance": {
+          "total_reward": -106615.5,
+          "average_waiting_time": 173.9779771615008,
+          "average_queue_length": 19.743611111111136,
+          "throughput": 1744.0,
+          "average_travel_time": 373.6305057096248,
+          "episode_duration": 1800.0
+        },
+        "main_road_priority": {
+          "total_reward": -108159.5,
+          "average_waiting_time": 176.5016313213703,
+          "average_queue_length": 20.029537037037006,
+          "throughput": 1745.0,
+          "average_travel_time": 375.4706362153344,
+          "episode_duration": 1800.0
+        },
+        "congestion_resistance": {
+          "total_reward": -106615.5,
+          "average_waiting_time": 173.9779771615008,
+          "average_queue_length": 19.743611111111136,
+          "throughput": 1744.0,
+          "average_travel_time": 373.6305057096248,
+          "episode_duration": 1800.0
+        }
+      }
+    }
+  }
+}

@@ -27,6 +27,16 @@ class SimpleDQNNet(nn.Module):
 
 
 class SimpleDQNAgentOne(NetworkAgent):
+    def _expand_phase_feature(self, phase_value):
+        phase_id = phase_value[0] if isinstance(phase_value, (list, tuple, np.ndarray)) else phase_value
+        phase_encoding = self.dic_traffic_env_conf["PHASE"]
+        encoding = phase_encoding.get(phase_id)
+        if encoding is None:
+            encoding = phase_encoding.get(str(phase_id))
+        if encoding is None:
+            raise KeyError(phase_id)
+        return encoding
+
     def build_network(self):
         used_feature = self.dic_traffic_env_conf["LIST_STATE_FEATURE"]
         feature_dims = self.get_feature_dims(used_feature)
@@ -79,7 +89,7 @@ class SimpleDQNAgentOne(NetworkAgent):
             for feature_name in self.dic_traffic_env_conf["LIST_STATE_FEATURE"]:
                 if feature_name == "cur_phase":
                     dic_state_feature_arrays[feature_name].append(
-                        self.dic_traffic_env_conf['PHASE'][s[feature_name][0]])
+                        self._expand_phase_feature(s[feature_name]))
                 else:
                     dic_state_feature_arrays[feature_name].append(s[feature_name])
 

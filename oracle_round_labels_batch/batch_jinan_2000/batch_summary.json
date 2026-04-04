@@ -1,0 +1,37 @@
+{
+  "success_count": 2,
+  "skipped_count": 0,
+  "failed_count": 0,
+  "rows": [
+    {
+      "memo": "exp_llmmode_dqn",
+      "experiment_name": "anon_3_4_jinan_real_2000.json_03_30_16_00_04",
+      "model_name": "AdvancedDQN",
+      "status": "success",
+      "reason": "",
+      "available_rounds": "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59",
+      "selected_rounds": "0,5,10,15,20,25,30,35,40,45,50,55",
+      "returncode": 0,
+      "duration_seconds": 1484.474,
+      "error_excerpt": "",
+      "output_dir": "/root/autodl-tmp/NeuroTraffic/oracle_round_labels_batch/batch_jinan_2000/exp_llmmode_dqn/anon_3_4_jinan_real_2000.json_03_30_16_00_04",
+      "experiment_dir": "/root/autodl-tmp/NeuroTraffic/records/exp_llmmode_dqn/anon_3_4_jinan_real_2000.json_03_30_16_00_04",
+      "model_dir": "/root/autodl-tmp/NeuroTraffic/model/exp_llmmode_dqn/anon_3_4_jinan_real_2000.json_03_30_16_00_04"
+    },
+    {
+      "memo": "exp_llmmode_dqn_100",
+      "experiment_name": "anon_3_4_jinan_real_2000.json_03_30_16_03_09",
+      "model_name": "AdvancedDQN",
+      "status": "success",
+      "reason": "",
+      "available_rounds": "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59",
+      "selected_rounds": "0,5,10,15,20,25,30,35,40,45,50,55",
+      "returncode": 0,
+      "duration_seconds": 1486.591,
+      "error_excerpt": "",
+      "output_dir": "/root/autodl-tmp/NeuroTraffic/oracle_round_labels_batch/batch_jinan_2000/exp_llmmode_dqn_100/anon_3_4_jinan_real_2000.json_03_30_16_03_09",
+      "experiment_dir": "/root/autodl-tmp/NeuroTraffic/records/exp_llmmode_dqn_100/anon_3_4_jinan_real_2000.json_03_30_16_03_09",
+      "model_dir": "/root/autodl-tmp/NeuroTraffic/model/exp_llmmode_dqn_100/anon_3_4_jinan_real_2000.json_03_30_16_03_09"
+    }
+  ]
+}

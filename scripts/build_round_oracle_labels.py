@@ -95,6 +95,17 @@ def load_json(path):
         return json.load(file_obj)
 
 
+def normalize_traffic_env_conf(dic_traffic_env_conf):
+    normalized = copy.deepcopy(dic_traffic_env_conf)
+    phase_dict = normalized.get("PHASE")
+    if isinstance(phase_dict, dict):
+        normalized["PHASE"] = {
+            int(key) if isinstance(key, str) and key.lstrip("-").isdigit() else key: value
+            for key, value in phase_dict.items()
+        }
+    return normalized
+
+
 def set_global_seed(seed):
     random.seed(seed)
     if np is not None:
@@ -391,6 +402,117 @@ def write_candidate_metrics_csv(output_dir, rows):
             writer.writerow(row)
 
 
+def infer_feature_dim(feature_name, dic_traffic_env_conf):
+    if "cur_phase" in feature_name:
+        if dic_traffic_env_conf.get("BINARY_PHASE_EXPANSION", False):
+            phase_encoding = next(iter(dic_traffic_env_conf["PHASE"].values()))
+            return len(phase_encoding)
+        return 1
+
+    if feature_name == "adjacency_matrix":
+        return min(
+            dic_traffic_env_conf["TOP_K_ADJACENCY"],
+            dic_traffic_env_conf["NUM_INTERSECTIONS"],
+        )
+
+    if feature_name in {
+        "time_this_phase",
+        "queue_length",
+        "delay",
+        "throughput",
+        "phase_switch",
+        "pressure_total",
+        "main_road_queue_length",
+        "main_road_throughput",
+    }:
+        return 1
+
+    if feature_name in {
+        "pressure",
+        "num_in_seg_attend",
+        "lane_num_vehicle",
+        "lane_num_vehicle_downstream",
+        "delta_lane_num_vehicle",
+        "lane_num_waiting_vehicle_in",
+        "lane_num_waiting_vehicle_out",
+        "traffic_movement_pressure_queue",
+        "traffic_movement_pressure_queue_efficient",
+        "traffic_movement_pressure_num",
+        "lane_enter_running_part",
+    }:
+        return dic_traffic_env_conf["NUM_LANE"]
+
+    return None
+
+
+def get_feature_value_length(value):
+    if hasattr(value, "shape"):
+        if len(value.shape) == 0:
+            return 1
+        if len(value.shape) >= 1:
+            return int(value.shape[-1])
+    if isinstance(value, (list, tuple)):
+        return len(value)
+    return 1
+
+
+def validate_sample_record(sample, dic_traffic_env_conf, context):
+    state = sample[0]
+    next_state = sample[2]
+    for container_name, container in [("state", state), ("next_state", next_state)]:
+        for feature_name in dic_traffic_env_conf["LIST_STATE_FEATURE"]:
+            if feature_name not in container:
+                raise ValueError(
+                    "{0}: missing feature `{1}` in {2}".format(context, feature_name, container_name)
+                )
+            expected_dim = infer_feature_dim(feature_name, dic_traffic_env_conf)
+            actual_dim = get_feature_value_length(container[feature_name])
+            if expected_dim is not None and actual_dim != expected_dim:
+                raise ValueError(
+                    "{0}: feature `{1}` has dim {2}, expected {3} in {4}".format(
+                        context,
+                        feature_name,
+                        actual_dim,
+                        expected_dim,
+                        container_name,
+                    )
+                )
+
+
+def validate_replay_samples(candidate_train_round_dir, cnt_round, mode, dic_traffic_env_conf):
+    sample_files = sorted(candidate_train_round_dir.glob("total_samples_inter_*.pkl"))
+    if not sample_files:
+        raise ValueError(
+            "round {0} mode {1}: no total_samples_inter_*.pkl generated under {2}".format(
+                cnt_round, mode, candidate_train_round_dir
+            )
+        )
+
+    validated = 0
+    for sample_file in sample_files:
+        with open(sample_file, "rb") as file_obj:
+            while True:
+                try:
+                    samples = pickle.load(file_obj)
+                except EOFError:
+                    break
+                if not samples:
+                    continue
+                context = "round {0} mode {1} sample_file {2}".format(
+                    cnt_round, mode, sample_file.name
+                )
+                validate_sample_record(samples[0], dic_traffic_env_conf, context)
+                validated += 1
+                break
+
+    if validated == 0:
+        raise ValueError(
+            "round {0} mode {1}: generated sample files exist but no non-empty samples were found".format(
+                cnt_round, mode
+            )
+        )
+
+
 def main():
     args = parse_args()
     require_dependencies()
@@ -409,7 +531,7 @@ def main():
     traffic_conf_path = experiment_dir / "traffic_env.conf"
     if not traffic_conf_path.exists():
         raise FileNotFoundError("Missing traffic_env.conf under {0}".format(experiment_dir))
-    dic_traffic_env_conf = load_json(traffic_conf_path)
+    dic_traffic_env_conf = normalize_traffic_env_conf(load_json(traffic_conf_path))
 
     available_rounds = discover_available_rounds(experiment_dir)
     target_rounds = select_target_rounds(
@@ -461,6 +583,12 @@ def main():
                 dic_traffic_env_conf=copy.deepcopy(dic_traffic_env_conf),
             )
             round_constructor.make_reward_for_system()
+            validate_replay_samples(
+                candidate_train_round_dir=candidate_train_round_dir,
+                cnt_round=cnt_round,
+                mode=mode,
+                dic_traffic_env_conf=dic_traffic_env_conf,
+            )
 
             copy_required_checkpoints(
                 model_dir=model_dir,
