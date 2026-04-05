@@ -1,24 +1,29 @@
 __pycache__/
-.vscode/
-LICENSE
-PROJECT_ARCHITECTURE_CN.md
-records/
-model/
+models/__pycache__/
+utils/__pycache__/
+
 .ipynb_checkpoints/
+models/.ipynb_checkpoints/
 comparison_outputs/dqn_jinan_real/.ipynb_checkpoints/
 comparison_outputs/dqn_jinan_real_2000/.ipynb_checkpoints/
 comparison_outputs/dqn_jinan_real_2500/.ipynb_checkpoints/
-models/__pycache__/
-models/.ipynb_checkpoints/
-utils/__pycache__/
+
+.vscode/
+
+# Runtime artifacts
+records/
+model/
+comparison_outputs/
 tmp_compare/
 test.txt
-selector_training_subsets/
+
+# Dataset artifacts
 selector_dataset_exports/
-scripts/
-comparison_outputs/llm_dqn_2/
-comparison_outputs/llm_dqn_2_2000/
-comparison_outputs/llm_dqn_2_2500/
-comparison_outputs/llm_dqn_3/
-comparison_outputs/llm_dqn_3_2000/
-comparison_outputs/llm_dqn_3_2500/
+selector_training_subsets/
+window_oracle_labels/
+window_oracle_selector_datasets/
+selector_models/
+selector_finetune_data/
+
+# Temporary oracle workspaces
+tmp_window_oracle/
