@@ -3,6 +3,7 @@ import pickle
 import os
 import traceback
 from .reward_builder import RewardBuilder
+from .phase_utils import get_phase_encoding
 
 
 class ConstructSample:
@@ -52,7 +53,9 @@ class ConstructSample:
             for key, value in state["state"].items():
                 if key in features:
                     if "cur_phase" in key:
-                        state_after_selection[key] = self.dic_traffic_env_conf['PHASE'][value[0]]
+                        state_after_selection[key] = get_phase_encoding(
+                            self.dic_traffic_env_conf['PHASE'], value[0]
+                        )
                     else:
                         state_after_selection[key] = value
         else:

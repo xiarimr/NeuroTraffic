@@ -10,6 +10,7 @@ import torch
 import torch.nn as nn
 
 from .network_agent import NetworkAgent, relation
+from utils.phase_utils import get_phase_encoding
 
 
 class AdvancedMPLightNet(nn.Module):
@@ -102,7 +103,9 @@ class AdvancedMPLightAgent(NetworkAgent):
         for s in states:
             for feature_name in self.dic_traffic_env_conf["LIST_STATE_FEATURE"]:
                 if feature_name == "cur_phase":
-                    dic_state_feature_arrays[feature_name].append(self.dic_traffic_env_conf['PHASE'][s[feature_name][0]])
+                    dic_state_feature_arrays[feature_name].append(
+                        get_phase_encoding(self.dic_traffic_env_conf['PHASE'], s[feature_name][0])
+                    )
                 else:
                     dic_state_feature_arrays[feature_name].append(s[feature_name])
         state_input = [np.array(dic_state_feature_arrays[feature_name], dtype=np.float32) for feature_name in used_feature]

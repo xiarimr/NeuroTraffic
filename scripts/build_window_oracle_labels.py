@@ -48,18 +48,36 @@ def parse_args():
     )
     parser.add_argument(
         "--dataset-json",
-        required=True,
-        help="Path to selector_dataset_exports/.../dataset.json",
+        default=None,
+        help="Optional dataset.json used only to enrich sample metadata.",
     )
     parser.add_argument(
         "--sample-id",
-        required=True,
-        help="Target train sample id, for example train:train_round_11_generator_0:000200",
+        default=None,
+        help="Optional sample id, for example train:train_round_11_generator_0:000200",
     )
     parser.add_argument(
         "--source-experiment-dir",
         default=None,
-        help="Optional override for the source records experiment directory.",
+        help="Source records experiment directory. Required when --dataset-json is not provided.",
+    )
+    parser.add_argument(
+        "--round-id",
+        type=int,
+        default=None,
+        help="Target train round id. Used when --sample-id is not provided.",
+    )
+    parser.add_argument(
+        "--generator-id",
+        type=int,
+        default=None,
+        help="Target generator id. Used when --sample-id is not provided.",
+    )
+    parser.add_argument(
+        "--time-step",
+        type=int,
+        default=None,
+        help="Target window start time. Used when --sample-id is not provided.",
     )
     parser.add_argument(
         "--output-root",
@@ -146,6 +164,50 @@ def parse_train_sample_id(sample_id):
     return parsed
 
 
+def build_train_sample_id(round_id, generator_id, time_step):
+    return "train:train_round_{0}_generator_{1}:{2:06d}".format(
+        int(round_id), int(generator_id), int(time_step)
+    )
+
+
+def build_parsed_sample(round_id, generator_id, time_step):
+    return parse_train_sample_id(build_train_sample_id(round_id, generator_id, time_step))
+
+
+def resolve_cli_target(args):
+    if args.sample_id is not None:
+        parsed_sample = parse_train_sample_id(args.sample_id)
+        explicit_values = [args.round_id, args.generator_id, args.time_step]
+        if any(value is not None for value in explicit_values):
+            expected = build_parsed_sample(
+                args.round_id if args.round_id is not None else parsed_sample["round_id"],
+                args.generator_id if args.generator_id is not None else parsed_sample["generator_id"],
+                args.time_step if args.time_step is not None else parsed_sample["time_step"],
+            )
+            if expected != parsed_sample:
+                raise WindowOracleError(
+                    "--sample-id and explicit round/generator/time arguments are inconsistent"
+                )
+        return parsed_sample
+
+    if args.round_id is None or args.generator_id is None or args.time_step is None:
+        raise WindowOracleError(
+            "Provide either --sample-id or the full set of --round-id --generator-id --time-step"
+        )
+    return build_parsed_sample(args.round_id, args.generator_id, args.time_step)
+
+
+def normalize_env_conf(env_conf):
+    normalized = deepcopy(env_conf)
+    phase_map = normalized.get("PHASE")
+    if isinstance(phase_map, dict):
+        normalized["PHASE"] = {
+            int(key) if isinstance(key, str) and key.isdigit() else key: value
+            for key, value in phase_map.items()
+        }
+    return normalized
+
+
 def find_sample_by_id(dataset_payload, sample_id):
     for sample in dataset_payload["samples"]:
         if sample.get("sample_id") == sample_id:
@@ -161,6 +223,16 @@ def resolve_experiment_from_sample(dataset_meta, sample, override=None):
     if not experiment_dir:
         raise WindowOracleError("dataset.json meta.source_experiment_dir is missing")
     return Path(experiment_dir).resolve()
+
+
+def resolve_experiment_from_args(args, dataset_payload=None, sample=None):
+    if args.source_experiment_dir:
+        return Path(args.source_experiment_dir).resolve()
+    if dataset_payload is None:
+        raise WindowOracleError(
+            "--source-experiment-dir is required when --dataset-json is not provided"
+        )
+    return resolve_experiment_from_sample(dataset_payload.get("meta", {}), sample, None)
 
 
 def infer_source_model_dir(source_records_dir):
@@ -209,7 +281,6 @@ def copy_static_experiment_files(source_records_dir, target_records_dir, env_con
 
     shutil.copy2(agent_conf_src, target_records_dir / "agent.conf")
     shutil.copy2(traffic_env_conf_src, target_records_dir / "traffic_env.conf")
-    save_json(target_records_dir / "anon_env.conf", env_conf)
 
     for file_key in ["TRAFFIC_FILE", "ROADNET_FILE"]:
         file_name = env_conf[file_key]
@@ -241,6 +312,79 @@ def copy_required_checkpoints(source_model_dir, target_model_dir, target_round, 
     for checkpoint_path in required_files:
         shutil.copy2(checkpoint_path, target_model_dir / checkpoint_path.name)
     return True
+
+
+def load_selector_snapshot_from_records(source_records_dir, parsed_sample):
+    mode_log_path = (
+        source_records_dir
+        / "train_round"
+        / "round_{0}".format(parsed_sample["round_id"])
+        / "generator_{0}".format(parsed_sample["generator_id"])
+        / "mode_selector_log.csv"
+    )
+    if not mode_log_path.exists():
+        return {}
+
+    with open(mode_log_path, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            try:
+                row_time = int(float(row["time"]))
+            except Exception:
+                continue
+            if row_time == parsed_sample["time_step"]:
+                return {
+                    "time": row_time,
+                    "selector_type": row.get("selector_type"),
+                    "backend": row.get("backend"),
+                    "previous_mode": row.get("previous_mode"),
+                    "selected_mode": row.get("selected_mode"),
+                    "current_mode": row.get("current_mode"),
+                    "mode_changed": row.get("mode_changed"),
+                    "fallback_triggered": row.get("fallback_triggered"),
+                    "reason": row.get("reason"),
+                    "raw_output": row.get("raw_output"),
+                    "average_queue_length": row.get("average_queue_length"),
+                    "trunk_queue_ratio": row.get("trunk_queue_ratio"),
+                    "throughput_change_rate": row.get("throughput_change_rate"),
+                    "spillback_risk": row.get("spillback_risk"),
+                    "average_throughput": row.get("average_throughput"),
+                }
+    return {}
+
+
+def build_sample_payload_from_records(source_records_dir, parsed_sample):
+    selector_snapshot = load_selector_snapshot_from_records(source_records_dir, parsed_sample)
+    meta = {
+        "episode_id": parsed_sample["episode_id"],
+        "time_step": parsed_sample["time_step"],
+        "source": "records_direct",
+    }
+    if selector_snapshot:
+        meta.update({
+            "selector_type": selector_snapshot.get("selector_type"),
+            "selector_backend": selector_snapshot.get("backend"),
+            "mode_changed": selector_snapshot.get("mode_changed") == "1",
+            "reason": selector_snapshot.get("reason"),
+            "raw_output": selector_snapshot.get("raw_output"),
+        })
+    return {
+        "sample_id": parsed_sample["sample_id"],
+        "meta": meta,
+        "labels": {},
+        "outcomes": {},
+        "source_record": selector_snapshot,
+    }
+
+
+def merge_sample_payload(base_payload, overlay_payload):
+    merged = deepcopy(base_payload)
+    for key in ["meta", "labels", "outcomes"]:
+        merged.setdefault(key, {})
+        merged[key].update(overlay_payload.get(key, {}))
+    if overlay_payload.get("source_record"):
+        merged["source_record"] = overlay_payload["source_record"]
+    return merged
 
 
 def rewrite_reward_mode_for_window(generator_dir, start_time, end_time, mode):
@@ -558,6 +702,7 @@ def build_output_payload(source_records_dir, sample_payload, parsed_sample, rank
             "meta": sample_payload.get("meta", {}),
             "labels": sample_payload.get("labels", {}),
             "outcomes": sample_payload.get("outcomes", {}),
+            "source_record": sample_payload.get("source_record", {}),
             "parsed": parsed_sample,
         },
         "oracle_mode": oracle_mode,
@@ -568,33 +713,44 @@ def build_output_payload(source_records_dir, sample_payload, parsed_sample, rank
 
 def main():
     args = parse_args()
-    dataset_json_path = Path(args.dataset_json).resolve()
-    dataset_payload = load_json(dataset_json_path)
-    parsed_sample = parse_train_sample_id(args.sample_id)
-    sample_payload = find_sample_by_id(dataset_payload, args.sample_id)
-    source_records_dir = resolve_experiment_from_sample(
-        dataset_payload.get("meta", {}),
-        sample_payload,
-        args.source_experiment_dir,
-    )
+    parsed_sample = resolve_cli_target(args)
+    dataset_payload = None
+    dataset_json_path = None
+    sample_payload = None
+
+    if args.dataset_json:
+        dataset_json_path = Path(args.dataset_json).resolve()
+        dataset_payload = load_json(dataset_json_path)
+        try:
+            sample_payload = find_sample_by_id(dataset_payload, parsed_sample["sample_id"])
+        except WindowOracleError:
+            sample_payload = None
+
+    source_records_dir = resolve_experiment_from_args(args, dataset_payload, sample_payload)
     source_model_dir = infer_source_model_dir(source_records_dir)
+
+    records_sample_payload = build_sample_payload_from_records(source_records_dir, parsed_sample)
+    if sample_payload is None:
+        sample_payload = records_sample_payload
+    else:
+        sample_payload = merge_sample_payload(sample_payload, records_sample_payload)
 
     if sample_payload.get("meta", {}).get("episode_id") != parsed_sample["episode_id"]:
         raise WindowOracleError(
-            "Sample metadata episode_id mismatch for {0}".format(args.sample_id)
+            "Sample metadata episode_id mismatch for {0}".format(parsed_sample["sample_id"])
         )
 
-    env_conf = load_json(source_records_dir / "traffic_env.conf")
+    env_conf = normalize_env_conf(load_json(source_records_dir / "traffic_env.conf"))
     agent_conf = load_json(source_records_dir / "agent.conf")
     run_count = args.run_count if args.run_count is not None else int(env_conf["RUN_COUNTS"])
     experiment_key = derive_experiment_key(source_records_dir)
-    output_dir = Path(args.output_root).resolve() / experiment_key / sanitize_name(args.sample_id)
+    output_dir = Path(args.output_root).resolve() / experiment_key / sanitize_name(parsed_sample["sample_id"])
     workspace_root = Path(args.workspace_root).resolve() / experiment_key
 
     if args.dry_run:
         dry_run_payload = {
-            "dataset_json": str(dataset_json_path),
-            "sample_id": args.sample_id,
+            "dataset_json": str(dataset_json_path) if dataset_json_path is not None else None,
+            "sample_id": parsed_sample["sample_id"],
             "parsed_sample": parsed_sample,
             "source_records_dir": str(source_records_dir),
             "source_model_dir": str(source_model_dir) if source_model_dir is not None else None,
@@ -602,6 +758,7 @@ def main():
             "workspace_root": str(workspace_root),
             "candidate_modes": args.candidate_modes,
             "run_count": run_count,
+            "records_source_snapshot": sample_payload.get("source_record", {}),
         }
         print(json.dumps(dry_run_payload, ensure_ascii=False, indent=2))
         return
@@ -611,7 +768,7 @@ def main():
     for candidate_mode in args.candidate_modes:
         print(
             "[window-oracle] sample={0} mode={1} round={2}".format(
-                args.sample_id, candidate_mode, parsed_sample["round_id"]
+                parsed_sample["sample_id"], candidate_mode, parsed_sample["round_id"]
             )
         )
         try:
@@ -632,7 +789,7 @@ def main():
             result = {
                 "mode": candidate_mode,
                 "status": "error",
-                "workspace_dir": str(workspace_root / sanitize_name(args.sample_id) / candidate_mode),
+                "workspace_dir": str(workspace_root / sanitize_name(parsed_sample["sample_id"]) / candidate_mode),
                 "error": "{0}: {1}".format(type(exc).__name__, exc),
                 "traceback": traceback.format_exc(),
             }

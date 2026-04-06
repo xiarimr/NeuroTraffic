@@ -14,6 +14,7 @@ import torch.nn.functional as F
 
 from .agent import Agent
 from .colight_net import ColightEncoder
+from utils.phase_utils import get_phase_encoding
 
 
 class PPOCoLightNet(nn.Module):
@@ -125,7 +126,7 @@ class PPOCoLightAgent(Agent):
             for feature in used_feature:
                 if feature == "cur_phase":
                     if self.dic_traffic_env_conf["BINARY_PHASE_EXPANSION"]:
-                        tmp.extend(self.dic_traffic_env_conf['PHASE'][s[i][feature][0]])
+                        tmp.extend(get_phase_encoding(self.dic_traffic_env_conf['PHASE'], s[i][feature][0]))
                     else:
                         tmp.extend(s[i][feature])
                 else:

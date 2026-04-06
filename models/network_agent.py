@@ -9,6 +9,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 from .agent import Agent
+from utils.phase_utils import get_phase_encoding
 
 
 class NetworkAgent(Agent):
@@ -237,7 +238,9 @@ class NetworkAgent(Agent):
             inputs = []
             for feature in self.dic_traffic_env_conf["LIST_STATE_FEATURE"]:
                 if "cur_phase" in feature:
-                    inputs.append(np.array([self.dic_traffic_env_conf['PHASE'][s[feature][0]]], dtype=np.float32))
+                    inputs.append(np.array([get_phase_encoding(
+                        self.dic_traffic_env_conf['PHASE'], s[feature][0]
+                    )], dtype=np.float32))
                 else:
                     inputs.append(np.array([s[feature]], dtype=np.float32))
             return inputs
