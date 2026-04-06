@@ -13,7 +13,6 @@ comparison_outputs/dqn_jinan_real_2500/.ipynb_checkpoints/
 # Runtime artifacts
 records/
 model/
-comparison_outputs/
 tmp_compare/
 test.txt
 
